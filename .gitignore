@@ -1,0 +1,36 @@
+# --- Python / FastAPI ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+.venv/
+venv/
+env/
+*.egg-info/
+*.log
+
+# --- Node / React ---
+node_modules/
+dist/
+build/
+.cache/
+.npm/
+.vite/
+*.log
+
+# --- Environments & secrets ---
+.env
+.env.*
+*.env
+
+# --- OS / Editor junk ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# --- Data artifacts (keep raw CSVs but ignore large dumps) ---
+data/*.parquet
+data/*.feather
+data/*.zip
