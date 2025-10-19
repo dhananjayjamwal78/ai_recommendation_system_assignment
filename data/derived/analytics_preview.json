@@ -1,0 +1,21 @@
+{
+  "category_counts": {
+    "['Home & Kitchen'": 254,
+    "['Patio": 23,
+    "['Tools & Home Improvement'": 17,
+    "['Electronics'": 6,
+    "['Baby Products'": 6,
+    "['Beauty & Personal Care'": 4,
+    "['Office Products'": 2
+  },
+  "price_stats": {
+    "count": 215.0,
+    "mean": 67.6306511627907,
+    "std": 57.96215030343771,
+    "min": 0.6,
+    "25%": 24.99,
+    "50%": 53.99,
+    "75%": 89.99,
+    "max": 349.0
+  }
+}
