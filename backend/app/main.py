@@ -2,9 +2,32 @@ import os
 import pandas as pd
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException
+import numpy as np
+import pandas as pd,math
 
 from .models_runtime import Runtime
 from .vector_store import load_or_build_faiss
+app = FastAPI()
+
+origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://*.vercel.app",
+    "https://your-frontend-domain.vercel.app",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    
+)
+@app.get("/healthz")
+def health():
+    return {"ok": True}
 
 # ---------- Config ----------
 # Default CSV at repo_root/data/products.csv (relative to this file)
@@ -28,6 +51,22 @@ runtime = Runtime(CSV_PATH)
 store = load_or_build_faiss(runtime)
 _df = runtime.df  # convenience alias
 
+def _to_py_scalar(x):
+    # unwrap numpy scalars
+    if isinstance(x, np.generic):
+        x = x.item()
+    # replace NaN/inf with None for JSON
+    if isinstance(x, float) and not math.isfinite(x):
+        return None
+    return x
+
+def _sanitize(obj):
+    if isinstance(obj, dict):
+        return {str(k): _sanitize(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize(v) for v in obj]
+    return _to_py_scalar(obj)
+
 # ---------- Routes ----------
 @app.get("/")
 def health():
@@ -36,16 +75,41 @@ def health():
 # Analytics summary for frontend charts
 @app.get("/analytics/summary")
 def analytics():
-    cat_counts = (
-        _df["category_main"]
-        .astype(str)
-        .value_counts()
-        .to_dict()
-    )
-    # price stats (coerce to numeric safely)
-    price = pd.to_numeric(_df.get("price", ""), errors="coerce")
-    price_stats = price.dropna().describe().to_dict()
-    return {"category_counts": cat_counts, "price_stats": price_stats}
+    try:
+        # ---- categories ----
+        if "category_main" in _df.columns:
+            cat_series = _df["category_main"].fillna("").astype(str)
+        else:
+            cat_series = _df.get("categories", pd.Series([], dtype=str)).fillna("").astype(str)
+            cat_series = cat_series.apply(lambda s: s.split(",")[0].strip() if s else "")
+
+        category_counts = {str(k): int(v) for k, v in cat_series.value_counts().items()}
+
+        # ---- prices ----
+        price_series = pd.to_numeric(_df.get("price", pd.Series([], dtype="float64")), errors="coerce")
+        price_series = price_series.dropna()
+
+        if price_series.empty:
+            # explicit schema with nulls if no numeric prices
+            price_stats = {"count": 0, "mean": None, "std": None,
+                           "min": None, "25%": None, "50%": None, "75%": None, "max": None}
+        else:
+            stats = price_series.describe().to_dict()
+            price_stats = {k: _to_py_scalar(v) for k, v in stats.items()}
+
+        return _sanitize({"category_counts": category_counts, "price_stats": price_stats})
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"analytics failed: {e}")
+
+@app.get("/debug/columns")
+def debug_columns():
+    return {
+        "rows": int(len(_df)),
+        "columns": list(map(str, _df.columns)),
+        "sample": _df.head(3).to_dict(orient="records"),
+    }
+
 
 # NLP: semantic search by prompt
 @app.get("/search")
