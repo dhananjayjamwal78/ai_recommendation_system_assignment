@@ -11,3 +11,4 @@ torch
 Pillow
 python-multipart
 requests
+langchain-community
