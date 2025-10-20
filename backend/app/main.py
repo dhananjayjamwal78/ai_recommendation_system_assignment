@@ -10,10 +10,7 @@ from .vector_store import load_or_build_faiss
 
 app = FastAPI()
 
-origins = [
-    "http://localhost:5173",
-    "https://*.vercel.app",
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
