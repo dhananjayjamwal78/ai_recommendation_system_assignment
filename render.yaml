@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: ai-recos
+    name: ai-recos-backend
     env: python
     plan: free
     region: singapore
@@ -11,6 +11,3 @@ services:
       cd backend/app
       uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
-    envVars:
-      - key: ENV
-        value: production
