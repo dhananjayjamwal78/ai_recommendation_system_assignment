@@ -5,16 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import HTTPException
 import numpy as np
 import pandas as pd,math
-
 from .models_runtime import Runtime
 from .vector_store import load_or_build_faiss
+
 app = FastAPI()
 
 origins = [
     "http://localhost:5173",
-    "http://localhost:3000",
     "https://*.vercel.app",
-    "https://your-frontend-domain.vercel.app",
 ]
 
 app.add_middleware(
@@ -22,12 +20,15 @@ app.add_middleware(
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
-    
+    allow_headers=["*"],  
 )
 @app.get("/healthz")
-def health():
-    return {"ok": True}
+def health_check():
+    return {"status": "ok"}
+
+@app.get("/")
+def home():
+    return {"message": "AI-Recos backend is live!"}
 
 # ---------- Config ----------
 # Default CSV at repo_root/data/products.csv (relative to this file)
